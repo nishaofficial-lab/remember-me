@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RememberMe 🎀 — Special Dates Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --cream:#fdf8f3;
+  --warm:#f5ede0;
+  --rose:#e8506a;
+  --rose-light:#fce8ec;
+  --gold:#d4943a;
+  --gold-light:#fef3e2;
+  --sage:#5a8a6e;
+  --sage-light:#e8f4ed;
+  --lavender:#7c6dfa;
+  --lavender-light:#eeecff;
+  --text:#2c2420;
+  --muted:#9a8880;
+  --border:#ecddd4;
+  --card:#ffffff;
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--cream);
+  color:var(--text);
+  min-height:100vh;
+}
+
+body::before{
+  content:'';
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse at 10% 20%, rgba(232,80,106,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(124,109,250,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(212,148,58,0.05) 0%, transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 40px;
+  background:rgba(253,248,243,0.88);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.nav-brand{
+  font-family:'Fraunces',serif;
+  font-size:22px;font-weight:900;font-style:italic;
+  color:var(--rose);
+  display:flex;align-items:center;gap:8px;
+}
+.nav-tabs{display:flex;gap:8px;}
+.tab-btn{
+  padding:8px 18px;
+  border:1.5px solid transparent;
+  border-radius:20px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:600;
+  cursor:pointer;background:transparent;color:var(--muted);
+  transition:all 0.2s;
+}
+.tab-btn:hover{color:var(--text);border-color:var(--border);}
+.tab-btn.active{background:var(--rose);color:white;border-color:var(--rose);}
+
+.container{
+  max-width:960px;margin:0 auto;
+  padding:40px 24px 80px;
+  position:relative;z-index:1;
+}
+
+.today-banner{
+  background:linear-gradient(135deg,#e8506a,#d4943a);
+  border-radius:24px;
+  padding:28px 32px;
+  color:white;
+  margin-bottom:32px;
+  display:none;
+  animation:fadeUp 0.5s ease;
+  position:relative;overflow:hidden;
+}
+.today-banner::before{
+  content:'🎊';
+  position:absolute;right:24px;top:50%;transform:translateY(-50%);
+  font-size:64px;opacity:0.2;
+}
+.today-banner.show{display:block;}
+.today-banner h3{
+  font-family:'Fraunces',serif;font-size:22px;font-weight:900;
+  margin-bottom:8px;
+}
+.today-events{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.today-event-item{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,0.2);
+  border-radius:12px;padding:10px 16px;
+}
+.today-event-name{font-weight:700;font-size:15px;}
+.today-event-type{font-size:12px;opacity:0.85;}
+.make-card-btn{
+  padding:8px 18px;
+  background:white;color:var(--rose);
+  border:none;border-radius:20px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:12px;font-weight:700;
+  cursor:pointer;transition:transform 0.15s;
+  white-space:nowrap;
+}
+.make-card-btn:hover{transform:scale(1.05);}
+
+.upcoming-strip{
+  display:flex;gap:12px;
+  overflow-x:auto;padding-bottom:8px;
+  margin-bottom:32px;
+  scrollbar-width:none;
+}
+.upcoming-strip::-webkit-scrollbar{display:none;}
+.upcoming-chip{
+  flex-shrink:0;
+  background:white;
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  padding:12px 18px;
+  display:flex;align-items:center;gap:10px;
+  animation:fadeUp 0.4s ease;
+}
+.upcoming-chip.tomorrow{border-color:var(--gold);background:var(--gold-light);}
+.chip-emoji{font-size:22px;}
+.chip-name{font-size:13px;font-weight:700;color:var(--text);}
+.chip-days{font-size:11px;color:var(--muted);margin-top:2px;}
+.chip-days.urgent{color:var(--gold);font-weight:700;}
+
+.page{display:none;}
+.page.active{display:block;animation:fadeUp 0.4s ease;}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(16px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.page-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:28px;
+}
+.page-title{
+  font-family:'Fraunces',serif;
+  font-size:32px;font-weight:900;font-style:italic;
+}
+
+.add-fab{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 22px;
+  background:var(--rose);color:white;
+  border:none;border-radius:50px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:14px;font-weight:700;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(232,80,106,0.3);
+  transition:all 0.2s;
+}
+.add-fab:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(232,80,106,0.4);}
+
+.events-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:16px;
+}
+
+.event-card{
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:20px;
+  padding:20px;
+  position:relative;
+  transition:all 0.25s;
+  animation:fadeUp 0.35s ease;
+  overflow:hidden;
+}
+.event-card::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;
+  height:3px;border-radius:20px 20px 0 0;
+}
+.event-card.birthday::before{background:linear-gradient(90deg,var(--rose),#ff8fab);}
+.event-card.anniversary::before{background:linear-gradient(90deg,var(--lavender),#b8acff);}
+.event-card.custom::before{background:linear-gradient(90deg,var(--sage),#7dc4a0);}
+.event-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,0.08);border-color:var(--rose);}
+
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
+.card-emoji{font-size:32px;}
+.card-actions{display:flex;gap:6px;}
+.icon-btn{
+  background:transparent;border:none;
+  font-size:16px;cursor:pointer;
+  padding:4px;border-radius:6px;
+  transition:background 0.15s;opacity:0.6;
+}
+.icon-btn:hover{background:var(--warm);opacity:1;}
+
+.card-name{
+  font-family:'Fraunces',serif;
+  font-size:19px;font-weight:700;
+  margin-bottom:4px;
+}
+.card-type-badge{
+  display:inline-block;
+  font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.8px;
+  padding:2px 8px;border-radius:10px;
+  margin-bottom:10px;
+}
+.birthday .card-type-badge{background:var(--rose-light);color:var(--rose);}
+.anniversary .card-type-badge{background:var(--lavender-light);color:var(--lavender);}
+.custom .card-type-badge{background:var(--sage-light);color:var(--sage);}
+
+.card-date{font-size:13px;color:var(--muted);margin-bottom:12px;}
+.days-left{
+  font-size:13px;font-weight:700;
+  padding:6px 12px;
+  border-radius:10px;
+  display:inline-block;
+}
+.days-today{background:linear-gradient(135deg,var(--rose),var(--gold));color:white;}
+.days-soon{background:var(--gold-light);color:var(--gold);}
+.days-normal{background:var(--warm);color:var(--muted);}
+
+.modal-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(44,36,32,0.5);
+  backdrop-filter:blur(4px);
+  z-index:200;
+  align-items:center;justify-content:center;
+  padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--card);
+  border-radius:28px;
+  padding:36px;
+  width:100%;max-width:460px;
+  max-height:90vh;overflow-y:auto;
+  animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  position:relative;
+}
+@keyframes modalIn{
+  from{opacity:0;transform:scale(0.9) translateY(20px);}
+  to{opacity:1;transform:scale(1) translateY(0);}
+}
+.modal-title{
+  font-family:'Fraunces',serif;
+  font-size:24px;font-weight:900;font-style:italic;
+  margin-bottom:24px;color:var(--rose);
+}
+.modal-close{
+  position:absolute;top:20px;right:20px;
+  background:var(--warm);border:none;
+  width:32px;height:32px;border-radius:50%;
+  font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.form-group{margin-bottom:18px;}
+label{
+  display:block;font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.8px;
+  color:var(--muted);margin-bottom:6px;
+}
+input[type=text],input[type=date],select,textarea{
+  width:100%;padding:12px 16px;
+  background:var(--warm);
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:14px;color:var(--text);
+  outline:none;
+  transition:border-color 0.2s,background 0.2s;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--rose);background:white;
+}
+textarea{resize:vertical;min-height:80px;}
+.type-btns{display:flex;gap:8px;}
+.type-btn{
+  flex:1;padding:10px;
+  border:1.5px solid var(--border);border-radius:12px;
+  background:transparent;cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:600;color:var(--muted);
+  transition:all 0.2s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.type-btn span{font-size:20px;}
+.type-btn.selected{border-color:var(--rose);background:var(--rose-light);color:var(--rose);}
+.save-btn{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--rose),#d4943a);
+  color:white;border:none;border-radius:14px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px;font-weight:700;
+  cursor:pointer;margin-top:8px;
+  transition:transform 0.15s,box-shadow 0.2s;
+}
+.save-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(232,80,106,0.35);}
+
+.postcard-modal{max-width:600px;}
+.postcard-controls{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  margin-bottom:20px;
+}
+.theme-btns{
+  display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;
+}
+.theme-btn{
+  width:32px;height:32px;border-radius:50%;
+  border:3px solid transparent;cursor:pointer;
+  transition:transform 0.15s,border-color 0.15s;
+}
+.theme-btn:hover{transform:scale(1.1);}
+.theme-btn.active{border-color:var(--text);}
+
+.postcard-wrap{
+  border-radius:20px;overflow:hidden;
+  margin-bottom:20px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.12);
+}
+#postcard{
+  width:100%;
+  min-height:280px;
+  padding:36px;
+  position:relative;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;
+  font-family:'Fraunces',serif;
+}
+.pc-bg-1{background:linear-gradient(135deg,#fce4ec,#f3e8ff,#fef3c7);}
+.pc-bg-2{background:linear-gradient(135deg,#e0f7fa,#e8f5e9,#fff9c4);}
+.pc-bg-3{background:linear-gradient(135deg,#fce4ec,#ffe0b2,#f3e8ff);}
+.pc-bg-4{background:linear-gradient(135deg,#e8eaf6,#fce4ec,#e0f2f1);}
+.pc-bg-5{background:linear-gradient(135deg,#fff8e1,#fce4ec,#e8f5e9);}
+
+.pc-confetti{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  pointer-events:none;overflow:hidden;
+}
+.pc-dot{
+  position:absolute;border-radius:50%;
+  animation:pcFloat 3s ease-in-out infinite;
+  opacity:0.4;
+}
+@keyframes pcFloat{
+  0%,100%{transform:translateY(0) rotate(0deg);}
+  50%{transform:translateY(-10px) rotate(180deg);}
+}
+.pc-photo-area{
+  width:90px;height:90px;
+  border-radius:50%;
+  border:4px solid white;
+  box-shadow:0 4px 16px rgba(0,0,0,0.15);
+  margin-bottom:16px;
+  overflow:hidden;
+  background:rgba(255,255,255,0.6);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  position:relative;
+}
+.pc-photo-area img{width:100%;height:100%;object-fit:cover;}
+.pc-photo-placeholder{text-align:center;font-family:'Plus Jakarta Sans',sans-serif;}
+.pc-photo-placeholder .picon{font-size:28px;}
+.pc-photo-placeholder p{font-size:9px;color:#888;margin-top:2px;}
+.pc-emoji-big{font-size:48px;margin-bottom:8px;}
+.pc-to{
+  font-size:13px;color:rgba(0,0,0,0.5);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  margin-bottom:4px;font-style:italic;
+}
+.pc-name{
+  font-size:28px;font-weight:900;
+  color:#2c2420;margin-bottom:12px;
+  line-height:1.1;
+}
+.pc-msg{
+  font-size:15px;color:rgba(44,36,32,0.75);
+  line-height:1.7;max-width:380px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-style:italic;
+}
+.pc-footer{
+  margin-top:20px;
+  font-size:11px;color:rgba(44,36,32,0.4);
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+
+.download-btn{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--sage),#7dc4a0);
+  color:white;border:none;border-radius:14px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px;font-weight:700;cursor:pointer;
+  transition:all 0.2s;
+}
+.download-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(90,138,110,0.35);}
+
+.empty-state{
+  text-align:center;padding:64px 20px;
+  color:var(--muted);
+  grid-column:1/-1;
+}
+.empty-state .big-emoji{font-size:56px;margin-bottom:16px;}
+.empty-state h3{
+  font-family:'Fraunces',serif;
+  font-size:22px;color:var(--text);margin-bottom:8px;
+}
+
+@media(max-width:600px){
+  nav{padding:14px 16px;}
+  .container{padding:24px 16px 60px;}
+  .postcard-controls{grid-template-columns:1fr;}
+  .modal{padding:24px 20px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">🎀 RememberMe</div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="showPage('all',event)">All Events</button>
+    <button class="tab-btn" onclick="showPage('birthday',event)">🎂 Birthdays</button>
+    <button class="tab-btn" onclick="showPage('anniversary',event)">💍 Anniversaries</button>
+    <button class="tab-btn" onclick="showPage('custom',event)">📅 Custom</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="today-banner" id="todayBanner">
+    <h3>🎉 Today is special!</h3>
+    <div class="today-events" id="todayEvents"></div>
+  </div>
+
+  <div class="upcoming-strip" id="upcomingStrip"></div>
+
+  <div class="page active" id="pageAll">
+    <div class="page-header">
+      <div class="page-title">All Events ✨</div>
+      <button class="add-fab" onclick="openAddModal()">＋ Add Event</button>
+    </div>
+    <div class="events-grid" id="allGrid"></div>
+  </div>
+
+  <div class="page" id="pageBirthday">
+    <div class="page-header">
+      <div class="page-title">Birthdays 🎂</div>
+      <button class="add-fab" onclick="openAddModal('birthday')">＋ Add Birthday</button>
+    </div>
+    <div class="events-grid" id="birthdayGrid"></div>
+  </div>
+
+  <div class="page" id="pageAnniversary">
+    <div class="page-header">
+      <div class="page-title">Anniversaries 💍</div>
+      <button class="add-fab" onclick="openAddModal('anniversary')">＋ Add Anniversary</button>
+    </div>
+    <div class="events-grid" id="anniversaryGrid"></div>
+  </div>
+
+  <div class="page" id="pageCustom">
+    <div class="page-header">
+      <div class="page-title">Important Dates 📅</div>
+      <button class="add-fab" onclick="openAddModal('custom')">＋ Add Date</button>
+    </div>
+    <div class="events-grid" id="customGrid"></div>
+  </div>
+
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAddModal()">✕</button>
+    <div class="modal-title" id="modalTitle">Add New Event 🌸</div>
+    <div class="form-group">
+      <label>Type</label>
+      <div class="type-btns">
+        <button class="type-btn selected" data-type="birthday" onclick="selectType('birthday')">
+          <span>🎂</span>Birthday
+        </button>
+        <button class="type-btn" data-type="anniversary" onclick="selectType('anniversary')">
+          <span>💍</span>Anniversary
+        </button>
+        <button class="type-btn" data-type="custom" onclick="selectType('custom')">
+          <span>📅</span>Custom
+        </button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Person / Event Name</label>
+      <input type="text" id="inputName" placeholder="e.g. Mama, Best Friend Priya..."/>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="inputDate"/>
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea id="inputNotes" placeholder="Any special notes..."></textarea>
+    </div>
+    <button class="save-btn" onclick="saveEvent()">Save Event 🎀</button>
+  </div>
+</div>
+
+<!-- POSTCARD MODAL -->
+<div class="modal-overlay" id="postcardModal">
+  <div class="modal postcard-modal">
+    <button class="modal-close" onclick="closePostcardModal()">✕</button>
+    <div class="modal-title">Create Postcard 🎨</div>
+    <div class="form-group">
+      <label>Card Theme</label>
+      <div class="theme-btns">
+        <button class="theme-btn active" data-theme="pc-bg-1" onclick="setTheme('pc-bg-1',this)" style="background:linear-gradient(135deg,#fce4ec,#f3e8ff)"></button>
+        <button class="theme-btn" data-theme="pc-bg-2" onclick="setTheme('pc-bg-2',this)" style="background:linear-gradient(135deg,#e0f7fa,#e8f5e9)"></button>
+        <button class="theme-btn" data-theme="pc-bg-3" onclick="setTheme('pc-bg-3',this)" style="background:linear-gradient(135deg,#fce4ec,#ffe0b2)"></button>
+        <button class="theme-btn" data-theme="pc-bg-4" onclick="setTheme('pc-bg-4',this)" style="background:linear-gradient(135deg,#e8eaf6,#fce4ec)"></button>
+        <button class="theme-btn" data-theme="pc-bg-5" onclick="setTheme('pc-bg-5',this)" style="background:linear-gradient(135deg,#fff8e1,#fce4ec)"></button>
+      </div>
+    </div>
+    <div class="postcard-controls">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Custom Message</label>
+        <textarea id="pcMessage" rows="3" placeholder="Write your wish..." oninput="updatePostcard()"></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>From</label>
+        <input type="text" id="pcFrom" placeholder="Your name" oninput="updatePostcard()"/>
+        <label style="margin-top:10px">Auto-generate wish</label>
+        <button class="save-btn" style="padding:8px;margin-top:4px;font-size:12px" onclick="autoGenerate()">✨ Generate</button>
+      </div>
+    </div>
+    <div class="postcard-wrap">
+      <div id="postcard" class="pc-bg-1">
+        <div class="pc-confetti" id="pcConfetti"></div>
+        <div class="pc-photo-area" id="pcPhotoArea" onclick="triggerPhotoUpload()">
+          <div class="pc-photo-placeholder" id="pcPhotoPlaceholder">
+            <div class="picon">📸</div>
+            <p>Tap to add photo</p>
+          </div>
+        </div>
+        <input type="file" id="pcPhotoInput" accept="image/*" style="display:none" onchange="loadPhoto(event)"/>
+        <div class="pc-emoji-big" id="pcEmoji">🎂</div>
+        <div class="pc-to">Wishing</div>
+        <div class="pc-name" id="pcName">Someone Special</div>
+        <div class="pc-msg" id="pcMsgDisplay">May your day be as wonderful as you are! 🌸</div>
+        <div class="pc-footer" id="pcFromDisplay">With love ✨</div>
+      </div>
+    </div>
+    <button class="download-btn" onclick="downloadPostcard()">⬇️ Download Postcard</button>
+  </div>
+</div>
+
+<script>
+let events = JSON.parse(localStorage.getItem('rememberme') || '[]');
+let editingId = null;
+let currentType = 'birthday';
+let currentPcEvent = null;
+
+const WISHES = {
+  birthday: [
+    "May your birthday be as bright and beautiful as your smile! Wishing you all the joy and happiness today and always. 🌸",
+    "Another year of being absolutely amazing! Hope this birthday brings you everything your heart desires. 🎂✨",
+    "Wishing you a day filled with laughter, love, and all your favourite things. Happy Birthday! 🎉",
+    "May this special day mark the beginning of a wonderful new chapter. You deserve all the best! 💖",
+    "Here's to you — for being extraordinary every single day. Have the most magical birthday! 🌟"
+  ],
+  anniversary: [
+    "Celebrating the beautiful bond you share — may your love grow stronger with every passing year. 💍",
+    "Love is not just about the big moments, but all the little ones in between. Happy Anniversary! 💕",
+    "Wishing you both a lifetime of shared laughter, beautiful memories, and endless love. 🌹",
+    "Every love story is beautiful, but yours is truly special. Happy Anniversary! ✨",
+    "Here's to another year of adventures, laughter, and love. You two are simply perfect together! 💞"
+  ],
+  custom: [
+    "Wishing you a day filled with joy and wonderful memories! 🌟",
+    "May this special occasion bring you all the happiness you deserve! 🎊",
+    "Celebrating this beautiful moment with you — here's to making it unforgettable! ✨",
+    "Sending you all my warmest wishes on this special day! 🌸",
+    "May this day be everything you dreamed of and more! 💫"
+  ]
+};
+
+const TYPE_EMOJI = { birthday:'🎂', anniversary:'💍', custom:'📅' };
+const TYPE_LABEL = { birthday:'Birthday', anniversary:'Anniversary', custom:'Important Date' };
+
+function getDaysUntil(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr);
+  const thisYear = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+  if (thisYear < today) thisYear.setFullYear(today.getFullYear() + 1);
+  return Math.round((thisYear - today) / 86400000);
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'long' });
+}
+
+function randomWish(type) {
+  const arr = WISHES[type] || WISHES.custom;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function render() {
+  renderBanner();
+  renderUpcoming();
+  renderGrid('allGrid', events);
+  renderGrid('birthdayGrid', events.filter(e => e.type === 'birthday'));
+  renderGrid('anniversaryGrid', events.filter(e => e.type === 'anniversary'));
+  renderGrid('customGrid', events.filter(e => e.type === 'custom'));
+}
+
+function renderBanner() {
+  const todayEvents = events.filter(e => getDaysUntil(e.date) === 0);
+  const banner = document.getElementById('todayBanner');
+  const container = document.getElementById('todayEvents');
+  if (!todayEvents.length) { banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  container.innerHTML = todayEvents.map(e => `
+    <div class="today-event-item">
+      <div>
+        <div class="today-event-name">${TYPE_EMOJI[e.type]} ${e.name}</div>
+        <div class="today-event-type">${TYPE_LABEL[e.type]}</div>
+      </div>
+      <button class="make-card-btn" onclick="openPostcard('${e.id}')">🎨 Make Postcard</button>
+    </div>
+  `).join('');
+}
+
+function renderUpcoming() {
+  const strip = document.getElementById('upcomingStrip');
+  const upcoming = events
+    .map(e => ({ ...e, days: getDaysUntil(e.date) }))
+    .filter(e => e.days > 0 && e.days <= 7)
+    .sort((a,b) => a.days - b.days);
+  if (!upcoming.length) { strip.innerHTML = ''; return; }
+  strip.innerHTML = upcoming.map(e => `
+    <div class="upcoming-chip ${e.days === 1 ? 'tomorrow' : ''}">
+      <div class="chip-emoji">${TYPE_EMOJI[e.type]}</div>
+      <div class="chip-info">
+        <div class="chip-name">${e.name}</div>
+        <div class="chip-days ${e.days <= 1 ? 'urgent' : ''}">
+          ${e.days === 1 ? '⚡ Tomorrow!' : `In ${e.days} days`}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderGrid(gridId, list) {
+  const grid = document.getElementById(gridId);
+  if (!list.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="big-emoji">🌸</div>
+        <h3>Nothing here yet</h3>
+        <p>Add your first special date above!</p>
+      </div>`;
+    return;
+  }
+  const sorted = [...list].sort((a,b) => getDaysUntil(a.date) - getDaysUntil(b.date));
+  grid.innerHTML = sorted.map(e => {
+    const days = getDaysUntil(e.date);
+    let daysHtml = '';
+    if (days === 0) daysHtml = `<span class="days-left days-today">🎉 Today!</span>`;
+    else if (days <= 7) daysHtml = `<span class="days-left days-soon">⚡ In ${days} day${days>1?'s':''}</span>`;
+    else daysHtml = `<span class="days-left days-normal">📅 In ${days} days</span>`;
+    return `
+      <div class="event-card ${e.type}">
+        <div class="card-top">
+          <div class="card-emoji">${TYPE_EMOJI[e.type]}</div>
+          <div class="card-actions">
+            <button class="icon-btn" onclick="openPostcard('${e.id}')" title="Make postcard">🎨</button>
+            <button class="icon-btn" onclick="editEvent('${e.id}')" title="Edit">✏️</button>
+            <button class="icon-btn" onclick="deleteEvent('${e.id}')" title="Delete">🗑️</button>
+          </div>
+        </div>
+        <div class="card-name">${e.name}</div>
+        <div class="card-type-badge">${TYPE_LABEL[e.type]}</div>
+        <div class="card-date">📅 ${formatDate(e.date)}</div>
+        ${e.notes ? `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">${e.notes}</div>` : ''}
+        ${daysHtml}
+      </div>`;
+  }).join('');
+}
+
+function showPage(type, e) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const pageMap = { all:'pageAll', birthday:'pageBirthday', anniversary:'pageAnniversary', custom:'pageCustom' };
+  document.getElementById(pageMap[type]).classList.add('active');
+  e.currentTarget.classList.add('active');
+}
+
+function openAddModal(type = 'birthday') {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add New Event 🌸';
+  document.getElementById('inputName').value = '';
+  document.getElementById('inputDate').value = '';
+  document.getElementById('inputNotes').value = '';
+  selectType(type);
+  document.getElementById('addModal').classList.add('open');
+}
+
+function closeAddModal() { document.getElementById('addModal').classList.remove('open'); }
+
+function selectType(type) {
+  currentType = type;
+  document.querySelectorAll('.type-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.type === type);
+  });
+}
+
+function editEvent(id) {
+  const e = events.find(ev => ev.id === id);
+  if (!e) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Event ✏️';
+  document.getElementById('inputName').value = e.name;
+  document.getElementById('inputDate').value = e.date;
+  document.getElementById('inputNotes').value = e.notes || '';
+  selectType(e.type);
+  document.getElementById('addModal').classList.add('open');
+}
+
+function saveEvent() {
+  const name = document.getElementById('inputName').value.trim();
+  const date = document.getElementById('inputDate').value;
+  const notes = document.getElementById('inputNotes').value.trim();
+  if (!name || !date) { alert('Please fill in name and date!'); return; }
+  if (editingId) {
+    const idx = events.findIndex(e => e.id === editingId);
+    if (idx > -1) events[idx] = { ...events[idx], name, date, notes, type: currentType };
+  } else {
+    events.push({ id: generateId(), name, date, notes, type: currentType });
+  }
+  localStorage.setItem('rememberme', JSON.stringify(events));
+  closeAddModal();
+  render();
+}
+
+function deleteEvent(id) {
+  if (!confirm('Delete this event?')) return;
+  events = events.filter(e => e.id !== id);
+  localStorage.setItem('rememberme', JSON.stringify(events));
+  render();
+}
+
+let currentTheme = 'pc-bg-1';
+let pcPhotoDataUrl = null;
+
+function openPostcard(id) {
+  currentPcEvent = events.find(e => e.id === id);
+  if (!currentPcEvent) return;
+  pcPhotoDataUrl = null;
+  document.getElementById('pcPhotoPlaceholder').style.display = 'block';
+  const existingImg = document.getElementById('pcPhotoArea').querySelector('img');
+  if (existingImg) existingImg.remove();
+  document.getElementById('pcName').textContent = currentPcEvent.name;
+  document.getElementById('pcEmoji').textContent = TYPE_EMOJI[currentPcEvent.type];
+  const wish = randomWish(currentPcEvent.type);
+  document.getElementById('pcMessage').value = wish;
+  document.getElementById('pcMsgDisplay').textContent = wish;
+  document.getElementById('pcFrom').value = '';
+  document.getElementById('pcFromDisplay').textContent = 'With love ✨';
+  setTheme('pc-bg-1', document.querySelector('.theme-btn[data-theme="pc-bg-1"]'));
+  buildConfetti();
+  document.getElementById('postcardModal').classList.add('open');
+}
+
+function closePostcardModal() { document.getElementById('postcardModal').classList.remove('open'); }
+
+function updatePostcard() {
+  const msg = document.getElementById('pcMessage').value;
+  const from = document.getElementById('pcFrom').value.trim();
+  document.getElementById('pcMsgDisplay').textContent = msg || '✨';
+  document.getElementById('pcFromDisplay').textContent = from ? `With love, ${from} 💖` : 'With love ✨';
+}
+
+function autoGenerate() {
+  if (!currentPcEvent) return;
+  const wish = randomWish(currentPcEvent.type);
+  document.getElementById('pcMessage').value = wish;
+  document.getElementById('pcMsgDisplay').textContent = wish;
+}
+
+function setTheme(theme, btn) {
+  currentTheme = theme;
+  const pc = document.getElementById('postcard');
+  pc.className = theme;
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  buildConfetti();
+}
+
+function buildConfetti() {
+  const container = document.getElementById('pcConfetti');
+  const colors = ['#f472b6','#a855f7','#fb923c','#fbbf24','#34d399','#60a5fa'];
+  container.innerHTML = Array.from({length:16}, (_,i) => {
+    const size = 6 + Math.random()*8;
+    const left = Math.random()*100;
+    const top = Math.random()*100;
+    const color = colors[i % colors.length];
+    const delay = Math.random()*2;
+    return `<div class="pc-dot" style="width:${size}px;height:${size}px;left:${left}%;top:${top}%;background:${color};animation-delay:${delay}s"></div>`;
+  }).join('');
+}
+
+function triggerPhotoUpload() { document.getElementById('pcPhotoInput').click(); }
+
+function loadPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    pcPhotoDataUrl = ev.target.result;
+    const area = document.getElementById('pcPhotoArea');
+    document.getElementById('pcPhotoPlaceholder').style.display = 'none';
+    let img = area.querySelector('img');
+    if (!img) { img = document.createElement('img'); area.appendChild(img); }
+    img.src = pcPhotoDataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+function downloadPostcard() {
+  const card = document.getElementById('postcard');
+  html2canvas(card, { scale:2, useCORS:true, backgroundColor:null }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `${currentPcEvent?.name || 'postcard'}_wish.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeAddModal(); closePostcardModal(); }
+});
+
+render();
+</script>
+</body>
+</html>
